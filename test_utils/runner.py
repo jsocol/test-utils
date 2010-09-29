@@ -1,10 +1,15 @@
 import os
 
+from django.core.management.commands.loaddata import Command
 from django.db import connections
 from django.db.backends.creation import TEST_DATABASE_PREFIX
 from django.db.backends.mysql import creation as mysql
 
 import django_nose
+from test_utils.command import new_handle
+
+
+Command.handle = new_handle
 
 
 # XXX: hard-coded to mysql.
