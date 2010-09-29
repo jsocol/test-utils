@@ -11,11 +11,21 @@ import django_nose
 # Monkey-patch loaddata to ignore foreign key checks.
 _old_handle = Command.handle
 def _new_handle(self, *fixture_labels, **options):
-    cursor = connections[DEFAULT_DB_ALIAS].cursor()
-    cursor.execute('SET foreign_key_checks = 0;')
+    using = options.get('database', DEFAULT_DB_ALIAS)
+    commit = options.get('commit', True)
+    connection = connections[using]
+
+    cursor = connection.cursor()
+    cursor.execute('SET foreign_key_checks = 0')
+
     _old_handle(self, *fixture_labels, **options)
-    cursor = connections[DEFAULT_DB_ALIAS].cursor()
-    cursor.execute('SET foreign_key_checks = 1;')
+
+    if commit:
+        cursor = connection.cursor()
+    cursor.execute('SET foreign_key_checks = 1')
+
+    if commit:
+        connection.close()
 Command.handle = _new_handle
 
 
