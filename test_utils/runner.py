@@ -1,15 +1,22 @@
 import os
 
 from django.core.management.commands.loaddata import Command
-from django.db import connections
+from django.db import connections, DEFAULT_DB_ALIAS
 from django.db.backends.creation import TEST_DATABASE_PREFIX
 from django.db.backends.mysql import creation as mysql
 
 import django_nose
-from test_utils.command import new_handle
 
 
-Command.handle = new_handle
+# Monkey-patch loaddata to ignore foreign key checks.
+_old_handle = Command.handle
+def _new_handle(self, *fixture_labels, **options):
+    cursor = connections[DEFAULT_DB_ALIAS].cursor()
+    cursor.execute('SET foreign_key_checks = 0;')
+    _old_handle(self, *fixture_labels, **options)
+    cursor = connections[DEFAULT_DB_ALIAS].cursor()
+    cursor.execute('SET foreign_key_checks = 1;')
+Command.handle = _new_handle
 
 
 # XXX: hard-coded to mysql.
